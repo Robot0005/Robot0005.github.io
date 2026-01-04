@@ -30,6 +30,7 @@
         }
         .back-btn:hover { color: white; }
 
+        /* 警告画面：JXL版と同じレイアウトを適用 */
         #error-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
             background: #000; color: #ff5555; display: none; flex-direction: column; 
@@ -41,6 +42,7 @@
         #error-advice { color: #ccc; max-width: 600px; margin-top: 25px; width: 100%; }
         .error-intro { margin-bottom: 20px; display: block; font-size: 16px; font-weight: 200; color: #aaa; text-align: center; }
         
+        /* 箇条書きコンテナ：PCでは中央寄せのためのパディングを確保 */
         .list-container { display: block; text-align: left; width: 100%; padding-left: 145px; box-sizing: border-box; }
         .error-list { list-style: none; padding: 0; margin: 0; }
         .error-list li { 
@@ -49,6 +51,12 @@
         }
         .error-list li::before { content: "・"; position: absolute; left: 0; color: white; }
         .error-back-btn { margin-top: 50px; color: #888; text-decoration: none; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 2px; }
+
+        /* モバイル対応：パディングをリセットして不自然な余白を消す */
+        @media (max-width: 600px) {
+            .list-container { padding-left: 10px; }
+            .error-list li { white-space: normal; }
+        }
     </style>
 </head>
 <body>
@@ -106,9 +114,14 @@
 
         function checkEnvironment() {
             const errorOverlay = document.getElementById('error-overlay');
-            const hdrSupport = window.matchMedia('(dynamic-range: high)').matches || window.matchMedia('(video-dynamic-range: high)').matches || (window.screen.highDynamicRangeSupported === true);
+            const hdrSupport = window.matchMedia('(dynamic-range: high)').matches || 
+                               window.matchMedia('(video-dynamic-range: high)').matches || 
+                               (window.screen.highDynamicRangeSupported === true);
             if (hdrSupport) {
-                errorOverlay.style.display = 'none'; counter.style.display = 'block'; navBtns.forEach(btn => btn.style.display = 'flex'); updateImage();
+                errorOverlay.style.display = 'none'; 
+                counter.style.display = 'block'; 
+                navBtns.forEach(btn => btn.style.display = 'flex'); 
+                updateImage();
             } else {
                 errorOverlay.style.display = 'flex';
             }
@@ -117,7 +130,12 @@
         function preloadImages(index) {
             if (preloadTimer) clearTimeout(preloadTimer);
             preloadTimer = setTimeout(() => {
-                [(index + 1) % fileList.length, (index + 2) % fileList.length, (index - 1 + fileList.length) % fileList.length].forEach(idx => { const img = new Image(); img.fetchPriority = 'low'; img.src = fileList[idx]; img.decode().catch(() => {}); });
+                [(index + 1) % fileList.length, (index + 2) % fileList.length, (index - 1 + fileList.length) % fileList.length].forEach(idx => { 
+                    const img = new Image(); 
+                    img.fetchPriority = 'low'; 
+                    img.src = fileList[idx]; 
+                    img.decode().catch(() => {}); 
+                });
             }, 300);
         }
 
@@ -133,6 +151,7 @@
         }
         function nextImage() { currentIndex = (currentIndex + 1) % fileList.length; updateImage(); }
         function prevImage() { currentIndex = (currentIndex - 1 + fileList.length) % fileList.length; updateImage(); }
+        
         document.addEventListener('keydown', (e) => {
             if (document.getElementById('error-overlay').style.display === 'flex') return;
             if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') nextImage();
