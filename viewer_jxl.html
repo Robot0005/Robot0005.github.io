@@ -5,110 +5,52 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JXL HDRフォトビューアー</title>
     <style>
-        body { 
-            background-color: black; 
-            margin: 0; 
-            height: 100dvh; 
-            width: 100vw;
-            overflow: hidden; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            font-family: sans-serif; 
-        }
-        
-        #viewer { 
-            position: relative; 
-            width: 100vw; 
-            height: 100dvh; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            touch-action: none; 
-        }
-
-        .photo { 
-            position: absolute; 
-            max-width: 100%; 
-            max-height: 100%; 
-            width: auto;
-            height: auto;
-            object-fit: contain; 
-            transition: opacity 0s; 
-            opacity: 0; 
-            pointer-events: none; 
-        }
+        body { background-color: black; margin: 0; height: 100dvh; width: 100vw; overflow: hidden; display: flex; justify-content: center; align-items: center; font-family: sans-serif; }
+        #viewer { position: relative; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; touch-action: none; }
+        .photo { position: absolute; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; transition: opacity 0s; opacity: 0; pointer-events: none; }
         .active { opacity: 1; z-index: 2; }
         .visible-back { opacity: 1; z-index: 1; }
         
-        #counter { 
-            position: absolute; 
-            top: env(safe-area-inset-top, 30px); 
-            left: 20px; 
-            color: rgba(255, 255, 255, 0.9); 
-            padding: 8px 16px; 
-            font-size: 20px; 
-            font-weight: bold; 
-            z-index: 10; 
-            display: none; 
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
-        }
+        /* カウンター：サイズを14pxに戻し、控えめに */
+        #counter { position: absolute; top: 20px; left: 20px; color: rgba(255, 255, 255, 0.7); padding: 8px 16px; font-size: 14px; z-index: 10; display: none; }
         
-        /* 左右ボタン：サイズを小さく、控えめに修正 */
         .nav-btn {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 50px; height: 80px; /* 幅を少しスリムに */
-            color: rgba(255, 255, 255, 0.4); /* デフォルトの透明度を下げて目立たなくする */
-            font-size: 40px; /* 60pxから40pxに縮小 */
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 80px; height: 80px; color: rgba(255, 255, 255, 0.4); font-size: 50px;
             display: none; justify-content: center; align-items: center;
-            cursor: pointer; transition: all 0.3s;
-            user-select: none; 
-            background: none;
-            z-index: 100;
+            cursor: pointer; transition: all 0.3s; user-select: none; z-index: 100;
         }
-        /* ホバーまたはアクティブ時（タップ時）に少し明るく */
-        .nav-btn:hover, .nav-btn:active { 
-            color: rgba(255, 255, 255, 0.9); 
-            transform: translateY(-50%) scale(1.1); 
-        }
+        .nav-btn:hover { color: white; transform: translateY(-50%) scale(1.1); }
+        #btn-left { left: 20px; }
+        #btn-right { right: 20px; }
 
-        #btn-left { left: 5px; }
-        #btn-right { right: 5px; }
-
-        .exit-container {
-            position: absolute; 
-            top: env(safe-area-inset-top, 25px); 
-            right: 40px; 
-            z-index: 110;
-        }
+        /* EXITボタン：38px, font-weight 200に戻す */
+        .top-right-container { position: absolute; right: 20px; top: 20px; z-index: 110; }
         .back-btn {
-            color: rgba(255, 255, 255, 0.7); 
-            font-size: 60px; 
-            font-weight: 900; 
-            text-decoration: none; 
-            transition: color 0.3s; 
-            line-height: 0.8;
-            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            color: rgba(255, 255, 255, 0.7); font-size: 38px; font-weight: 200;
+            text-decoration: none; transition: color 0.3s; line-height: 1; cursor: pointer;
         }
         .back-btn:hover { color: white; }
 
-        /* エラー画面（維持） */
+        /* 警告画面：以前のレイアウトを再現 */
         #error-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
-            background: #000; color: #ff5555;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 1000; text-align: center; padding: 40px; box-sizing: border-box;
+            background: #000; color: #ff5555; display: none; flex-direction: column; 
+            justify-content: center; align-items: center; z-index: 1000; text-align: center; padding: 40px; box-sizing: border-box;
         }
         h2 { color: white; font-size: 26px; margin-bottom: 5px; font-weight: bold; }
         .status-badge { display: inline-block; padding: 6px 16px; border-radius: 4px; margin: 10px 5px; font-weight: bold; font-size: 18px; }
         .bad { background: #551111; color: #ff8888; border: 1px solid #ff5555; }
         #error-advice { color: #ccc; max-width: 600px; margin-top: 25px; width: 100%; }
         .error-intro { margin-bottom: 20px; display: block; font-size: 16px; font-weight: 200; color: #aaa; text-align: center; }
-        .list-container { display: block; text-align: left; width: 100%; padding-left: 20px; box-sizing: border-box; }
+        
+        /* 箇条書きレイアウト復元 */
+        .list-container { display: block; text-align: left; width: 100%; padding-left: 145px; box-sizing: border-box; }
         .error-list { list-style: none; padding: 0; margin: 0; }
-        .error-list li { position: relative; padding-left: 1.5em; font-size: 17px; font-weight: bold; color: #eee; line-height: 1.6; margin-bottom: 12px; }
+        .error-list li { 
+            position: relative; padding-left: 1.5em; font-size: 17px; font-weight: bold; 
+            color: #eee; line-height: 1.6; margin-bottom: 12px; white-space: nowrap; 
+        }
         .error-list li::before { content: "・"; position: absolute; left: 0; color: white; }
         .error-back-btn { margin-top: 50px; color: #888; text-decoration: none; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 2px; }
     </style>
@@ -127,21 +69,17 @@
     </div>
 
     <div id="counter">1 / --</div>
-
-    <div class="exit-container">
+    <div class="top-right-container">
         <a href="index.html" class="back-btn" title="EXIT">&times;</a>
     </div>
 
     <div id="viewer">
         <div id="btn-left" class="nav-btn" onclick="prevImage()">&#10094;</div>
         <div id="btn-right" class="nav-btn" onclick="nextImage()">&#10095;</div>
-        
-        <img id="imgA" class="photo" src="">
-        <img id="imgB" class="photo" src="">
+        <img id="imgA" class="photo" src=""><img id="imgB" class="photo" src="">
     </div>
 
     <script>
-        // ファイルリスト（並び替え済み）
         const fileList = [
             "images/2024-05-18_16-05-48.jxl", "images/2024-05-18_17-32-47.jxl", "images/2024-08-04_12-25-28.jxl",
             "images/2024-08-04_12-30-45.jxl", "images/2024-09-16_12-05-16.jxl", "images/2024-09-16_12-19-28.jxl",
@@ -155,103 +93,63 @@
             "images/2025-11-01_14-24-16.jxl", "images/2025-11-01_21-17-07.jxl", "images/2025-11-02_16-40-41.jxl",
             "images/2025-11-02_16-59-44.jxl"
         ];
-        
         fileList.sort();
-        let currentIndex = 0;
-        const imgA = document.getElementById('imgA');
-        const imgB = document.getElementById('imgB');
-        const counter = document.getElementById('counter');
-        const navBtns = document.querySelectorAll('.nav-btn');
-        let useA = true;
-        let preloadTimer = null;
+        let currentIndex = 0, useA = true, preloadTimer = null;
+        const imgA = document.getElementById('imgA'), imgB = document.getElementById('imgB'), counter = document.getElementById('counter'), navBtns = document.querySelectorAll('.nav-btn');
 
         let touchStartX = 0;
-        let touchEndX = 0;
-        document.getElementById('viewer').addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; }, false);
-        document.getElementById('viewer').addEventListener('touchend', (e) => { touchEndX = e.changedTouches[0].screenX; handleGesture(); }, false);
-
-        function handleGesture() {
-            const threshold = 50; 
-            if (touchEndX < touchStartX - threshold) nextImage(); 
-            if (touchEndX > touchStartX + threshold) prevImage(); 
-        }
+        document.getElementById('viewer').addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX, false);
+        document.getElementById('viewer').addEventListener('touchend', e => {
+            const dist = e.changedTouches[0].screenX - touchStartX;
+            if (Math.abs(dist) > 50) dist > 0 ? prevImage() : nextImage();
+        }, false);
 
         async function checkEnvironment() {
-            const statusList = document.getElementById('status-list');
-            const errorOverlay = document.getElementById('error-overlay');
-            const errorList = document.getElementById('dynamic-error-list');
-            const h2Title = document.getElementById('error-title');
-            const checkJxl = () => new Promise((r) => { 
-                const i = new Image(); 
-                i.src = fileList[0]; 
-                i.onload = () => r(true); 
-                i.onerror = () => r(false); 
-                setTimeout(() => r(false), 1500); 
-            });
-            const jxlSupport = await checkJxl();
-            const hdrSupport = window.matchMedia('(dynamic-range: high)').matches || window.matchMedia('(video-dynamic-range: high)').matches || (window.screen.highDynamicRangeSupported === true);
-            
+            const statusList = document.getElementById('status-list'), errorOverlay = document.getElementById('error-overlay'), errorList = document.getElementById('dynamic-error-list'), h2Title = document.getElementById('error-title');
+            const checkJxl = () => new Promise((r) => { const i = new Image(); i.src = fileList[0]; i.onload = () => r(true); i.onerror = () => r(false); setTimeout(() => r(false), 2000); });
+            const jxlSupport = await checkJxl(), hdrSupport = window.matchMedia('(dynamic-range: high)').matches || window.matchMedia('(video-dynamic-range: high)').matches || (window.screen.highDynamicRangeSupported === true);
             if (jxlSupport && hdrSupport) {
-                errorOverlay.style.display = 'none';
-                counter.style.display = 'block';
-                navBtns.forEach(btn => btn.style.display = 'flex');
-                updateImage();
+                errorOverlay.style.display = 'none'; counter.style.display = 'block'; navBtns.forEach(btn => btn.style.display = 'flex'); updateImage();
             } else {
                 errorOverlay.style.display = 'flex';
-                // ...（エラー表示処理は省略せず維持）
-                let statusHtml = ""; let listHtml = "";
+                let s = "", l = "";
                 if (!jxlSupport && !hdrSupport) {
                     h2Title.innerText = "JXL・HDR環境が検出されません";
-                    statusHtml = `<div class="status-badge bad">JXL: 未検出</div><div class="status-badge bad">HDR: 未検出</div>`;
-                    listHtml = `<li>ブラウザがJXL、HDRに対応していない</li><li>ディスプレイがHDRに対応していない</li><li>OS、ディスプレイの設定でHDRが<br>有効になっていない</li>`;
+                    s = `<div class="status-badge bad">JXL: 未検出</div><div class="status-badge bad">HDR: 未検出</div>`;
+                    l = `<li>ブラウザがJXLまたはHDRに対応していない</li><li>ディスプレイがHDRに対応していない</li><li>OS,ディスプレイの設定でHDRが<br>有効になっていない</li>`;
                 } else if (!jxlSupport) {
-                    h2Title.innerText = "JXL環境が検出されません";
-                    statusHtml = `<div class="status-badge bad">JXL: 未検出</div>`;
-                    listHtml = `<li>ブラウザがJXLに対応していない</li>`;
+                    h2Title.innerText = "JXL環境が検出されません"; s = `<div class="status-badge bad">JXL: 未検出</div>`; l = `<li>ブラウザがJXLに対応していない</li>`;
                 } else {
-                    h2Title.innerText = "HDR環境が検出されません";
-                    statusHtml = `<div class="status-badge bad">HDR: 未検出</div>`;
-                    listHtml = `<li>ブラウザがHDRに対応していない</li><li>ディスプレイがHDRに対応していない</li><li>OS,ディスプレイの設定でHDRが<br>有効になっていない</li>`;
+                    h2Title.innerText = "HDR環境が検出されません"; s = `<div class="status-badge bad">HDR: 未検出</div>`; l = `<li>ブラウザがHDRに対応していない</li><li>ディスプレイがHDRに対応していない</li><li>OS,ディスプレイの設定でHDRが<br>有効になっていない</li>`;
                 }
-                statusList.innerHTML = statusHtml;
-                errorList.innerHTML = listHtml;
+                statusList.innerHTML = s; errorList.innerHTML = l;
             }
         }
 
-        function preloadImages(index) { 
-            if (preloadTimer) clearTimeout(preloadTimer); 
-            preloadTimer = setTimeout(() => { 
-                [(index + 1) % fileList.length, (index - 1 + fileList.length) % fileList.length].forEach(idx => { 
-                    const img = new Image(); img.fetchPriority = 'low'; img.src = fileList[idx]; 
-                }); 
-            }, 300); 
+        function preloadImages(index) {
+            if (preloadTimer) clearTimeout(preloadTimer);
+            preloadTimer = setTimeout(() => {
+                [(index + 1) % fileList.length, (index - 1 + fileList.length) % fileList.length].forEach(idx => { const img = new Image(); img.src = fileList[idx]; });
+            }, 300);
         }
 
-        function updateImage() { 
-            const currentImg = useA ? imgA : imgB; 
-            const nextImg = useA ? imgB : imgA; 
-            useA = !useA; 
-            currentImg.classList.remove('active'); 
-            currentImg.classList.add('visible-back'); 
-            nextImg.fetchPriority = 'high'; 
-            nextImg.src = fileList[currentIndex]; 
-            nextImg.onload = () => { 
-                nextImg.classList.add('active'); 
-                setTimeout(() => { currentImg.classList.remove('visible-back'); }, 100); 
-                counter.innerText = `${currentIndex + 1} / ${fileList.length}`; 
-                preloadImages(currentIndex); 
-            }; 
+        function updateImage() {
+            const currentImg = useA ? imgA : imgB, nextImg = useA ? imgB : imgA;
+            useA = !useA; currentImg.classList.remove('active'); currentImg.classList.add('visible-back');
+            nextImg.fetchPriority = 'high'; nextImg.src = fileList[currentIndex];
+            nextImg.onload = () => {
+                nextImg.classList.add('active');
+                setTimeout(() => { currentImg.classList.remove('visible-back'); }, 100);
+                counter.innerText = `${currentIndex + 1} / ${fileList.length}`; preloadImages(currentIndex);
+            };
         }
-
         function nextImage() { currentIndex = (currentIndex + 1) % fileList.length; updateImage(); }
         function prevImage() { currentIndex = (currentIndex - 1 + fileList.length) % fileList.length; updateImage(); }
-
-        document.addEventListener('keydown', (e) => { 
-            if (document.getElementById('error-overlay').style.display === 'flex') return; 
-            if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') nextImage(); 
-            else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevImage(); 
+        document.addEventListener('keydown', (e) => {
+            if (errorOverlay.style.display === 'flex') return;
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') nextImage();
+            else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevImage();
         });
-
         checkEnvironment();
     </script>
 </body>
