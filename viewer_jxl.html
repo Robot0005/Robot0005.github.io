@@ -93,7 +93,8 @@
             "images/2025-07-12_19-00-46.jxl", "images/2025-09-21_16-01-22.jxl", "images/2025-10-11_14-43-18.jxl",
             "images/2025-10-11_14-46-54.jxl", "images/2025-10-11_14-56-06.jxl", "images/2025-10-19_14-24-13.jxl",
             "images/2025-11-01_14-24-16.jxl", "images/2025-11-01_21-17-07.jxl", "images/2025-11-02_16-40-41.jxl",
-            "images/2025-11-02_16-59-44.jxl"
+            "images/2025-11-02_16-59-44.jxl", "images/2025-09-26_14-06-04.jxl", "images/2025-09-27_15-35-25.jxl", 
+            "images/2025-09-26_17-55-09.jxl", "images/2025-09-27_11-16-00.jxl"
         ];
         fileList.sort();
         let currentIndex = 0, useA = true, preloadTimer = null;
@@ -151,7 +152,6 @@
             }
         }
 
-        // --- 以下、既存のロジック ---
         function updateImage() {
             const currentImg = useA ? imgA : imgB, nextImg = useA ? imgB : imgA;
             useA = !useA; currentImg.classList.remove('active'); currentImg.classList.add('visible-back');

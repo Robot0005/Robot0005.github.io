@@ -30,7 +30,6 @@
         }
         .back-btn:hover { color: white; }
 
-        /* 警告画面：JXL版と同じレイアウトを適用 */
         #error-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
             background: #000; color: #ff5555; display: none; flex-direction: column; 
@@ -42,7 +41,6 @@
         #error-advice { color: #ccc; max-width: 600px; margin-top: 25px; width: 100%; }
         .error-intro { margin-bottom: 20px; display: block; font-size: 16px; font-weight: 200; color: #aaa; text-align: center; }
         
-        /* 箇条書きコンテナ：PCでは中央寄せのためのパディングを確保 */
         .list-container { display: block; text-align: left; width: 100%; padding-left: 145px; box-sizing: border-box; }
         .error-list { list-style: none; padding: 0; margin: 0; }
         .error-list li { 
@@ -52,7 +50,6 @@
         .error-list li::before { content: "・"; position: absolute; left: 0; color: white; }
         .error-back-btn { margin-top: 50px; color: #888; text-decoration: none; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 2px; }
 
-        /* モバイル対応：パディングをリセットして不自然な余白を消す */
         @media (max-width: 600px) {
             .list-container { padding-left: 10px; }
             .error-list li { white-space: normal; }
@@ -99,7 +96,8 @@
             "images/2025-07-12_19-00-46.jpg", "images/2025-09-21_16-01-22.jpg", "images/2025-10-11_14-43-18.jpg",
             "images/2025-10-11_14-46-54.jpg", "images/2025-10-11_14-56-06.jpg", "images/2025-10-19_14-24-13.jpg",
             "images/2025-11-01_14-24-16.jpg", "images/2025-11-01_21-17-07.jpg", "images/2025-11-02_16-40-41.jpg",
-            "images/2025-11-02_16-59-44.jpg"
+            "images/2025-11-02_16-59-44.jpg", "images/2025-09-26_14-06-04.jpg", "images/2025-09-27_15-35-25.jpg", 
+            "images/2025-09-26_17-55-09.jpg", "images/2025-09-27_11-16-00.jpg"
         ];
         fileList.sort();
         let currentIndex = 0, useA = true, preloadTimer = null;
