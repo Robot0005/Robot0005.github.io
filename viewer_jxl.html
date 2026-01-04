@@ -11,7 +11,6 @@
         .active { opacity: 1; z-index: 2; }
         .visible-back { opacity: 1; z-index: 1; }
         
-        /* カウンター：サイズを14pxに戻し、控えめに */
         #counter { position: absolute; top: 20px; left: 20px; color: rgba(255, 255, 255, 0.7); padding: 8px 16px; font-size: 14px; z-index: 10; display: none; }
         
         .nav-btn {
@@ -24,7 +23,6 @@
         #btn-left { left: 20px; }
         #btn-right { right: 20px; }
 
-        /* EXITボタン：38px, font-weight 200に戻す */
         .top-right-container { position: absolute; right: 20px; top: 20px; z-index: 110; }
         .back-btn {
             color: rgba(255, 255, 255, 0.7); font-size: 38px; font-weight: 200;
@@ -32,7 +30,6 @@
         }
         .back-btn:hover { color: white; }
 
-        /* 警告画面：以前のレイアウトを再現 */
         #error-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
             background: #000; color: #ff5555; display: none; flex-direction: column; 
@@ -41,10 +38,10 @@
         h2 { color: white; font-size: 26px; margin-bottom: 5px; font-weight: bold; }
         .status-badge { display: inline-block; padding: 6px 16px; border-radius: 4px; margin: 10px 5px; font-weight: bold; font-size: 18px; }
         .bad { background: #551111; color: #ff8888; border: 1px solid #ff5555; }
+        .good { background: #113311; color: #88ff88; border: 1px solid #55ff55; }
         #error-advice { color: #ccc; max-width: 600px; margin-top: 25px; width: 100%; }
         .error-intro { margin-bottom: 20px; display: block; font-size: 16px; font-weight: 200; color: #aaa; text-align: center; }
         
-        /* 箇条書きレイアウト復元 */
         .list-container { display: block; text-align: left; width: 100%; padding-left: 145px; box-sizing: border-box; }
         .error-list { list-style: none; padding: 0; margin: 0; }
         .error-list li { 
@@ -53,11 +50,16 @@
         }
         .error-list li::before { content: "・"; position: absolute; left: 0; color: white; }
         .error-back-btn { margin-top: 50px; color: #888; text-decoration: none; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 2px; }
+
+        @media (max-width: 600px) {
+            .list-container { padding-left: 10px; }
+            .error-list li { white-space: normal; }
+        }
     </style>
 </head>
 <body>
     <div id="error-overlay">
-        <h2 id="error-title">HDR環境が検出されません</h2>
+        <h2 id="error-title">環境を確認中...</h2>
         <div id="status-list"></div>
         <div id="error-advice">
             <span class="error-intro">このギャラリーの閲覧には正しい環境が必要です。以下の原因が考えられます。</span>
@@ -97,42 +99,59 @@
         let currentIndex = 0, useA = true, preloadTimer = null;
         const imgA = document.getElementById('imgA'), imgB = document.getElementById('imgB'), counter = document.getElementById('counter'), navBtns = document.querySelectorAll('.nav-btn');
 
-        let touchStartX = 0;
-        document.getElementById('viewer').addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX, false);
-        document.getElementById('viewer').addEventListener('touchend', e => {
-            const dist = e.changedTouches[0].screenX - touchStartX;
-            if (Math.abs(dist) > 50) dist > 0 ? prevImage() : nextImage();
-        }, false);
-
         async function checkEnvironment() {
-            const statusList = document.getElementById('status-list'), errorOverlay = document.getElementById('error-overlay'), errorList = document.getElementById('dynamic-error-list'), h2Title = document.getElementById('error-title');
-            const checkJxl = () => new Promise((r) => { const i = new Image(); i.src = fileList[0]; i.onload = () => r(true); i.onerror = () => r(false); setTimeout(() => r(false), 2000); });
-            const jxlSupport = await checkJxl(), hdrSupport = window.matchMedia('(dynamic-range: high)').matches || window.matchMedia('(video-dynamic-range: high)').matches || (window.screen.highDynamicRangeSupported === true);
+            const statusList = document.getElementById('status-list');
+            const errorOverlay = document.getElementById('error-overlay');
+            const errorList = document.getElementById('dynamic-error-list');
+            const h2Title = document.getElementById('error-title');
+
+            const checkJxl = () => new Promise((r) => { 
+                const i = new Image(); 
+                i.src = fileList[0]; 
+                i.onload = () => r(true); 
+                i.onerror = () => r(false); 
+                setTimeout(() => r(false), 2000); 
+            });
+
+            const jxlSupport = await checkJxl();
+            const hdrSupport = window.matchMedia('(dynamic-range: high)').matches || 
+                               window.matchMedia('(video-dynamic-range: high)').matches || 
+                               (window.screen.highDynamicRangeSupported === true);
+
             if (jxlSupport && hdrSupport) {
-                errorOverlay.style.display = 'none'; counter.style.display = 'block'; navBtns.forEach(btn => btn.style.display = 'flex'); updateImage();
+                errorOverlay.style.display = 'none';
+                counter.style.display = 'block';
+                navBtns.forEach(btn => btn.style.display = 'flex');
+                updateImage();
             } else {
                 errorOverlay.style.display = 'flex';
-                let s = "", l = "";
+                let s = ""; 
+                let l = "";
+
                 if (!jxlSupport && !hdrSupport) {
                     h2Title.innerText = "JXL・HDR環境が検出されません";
                     s = `<div class="status-badge bad">JXL: 未検出</div><div class="status-badge bad">HDR: 未検出</div>`;
-                    l = `<li>ブラウザがJXLまたはHDRに対応していない</li><li>ディスプレイがHDRに対応していない</li><li>OS,ディスプレイの設定でHDRが<br>有効になっていない</li>`;
+                    l = `<li>ブラウザがJXLに対応していない</li>
+                         <li>ブラウザがHDRに対応していない</li>
+                         <li>ディスプレイがHDRに対応していない</li>
+                         <li>OS,ディスプレイの設定でHDRが<br>有効になっていない</li>`;
                 } else if (!jxlSupport) {
-                    h2Title.innerText = "JXL環境が検出されません"; s = `<div class="status-badge bad">JXL: 未検出</div>`; l = `<li>ブラウザがJXLに対応していない</li>`;
+                    h2Title.innerText = "JXL環境が検出されません";
+                    s = `<div class="status-badge bad">JXL: 未検出</div><div class="status-badge good">HDR: 検出済</div>`;
+                    l = `<li>ブラウザがJXLに対応していない</li>`;
                 } else {
-                    h2Title.innerText = "HDR環境が検出されません"; s = `<div class="status-badge bad">HDR: 未検出</div>`; l = `<li>ブラウザがHDRに対応していない</li><li>ディスプレイがHDRに対応していない</li><li>OS,ディスプレイの設定でHDRが<br>有効になっていない</li>`;
+                    h2Title.innerText = "HDR環境が検出されません";
+                    s = `<div class="status-badge good">JXL: 検出済</div><div class="status-badge bad">HDR: 未検出</div>`;
+                    l = `<li>ブラウザがHDRに対応していない</li>
+                         <li>ディスプレイがHDRに対応していない</li>
+                         <li>OS,ディスプレイの設定でHDRが<br>有効になっていない</li>`;
                 }
-                statusList.innerHTML = s; errorList.innerHTML = l;
+                statusList.innerHTML = s;
+                errorList.innerHTML = l;
             }
         }
 
-        function preloadImages(index) {
-            if (preloadTimer) clearTimeout(preloadTimer);
-            preloadTimer = setTimeout(() => {
-                [(index + 1) % fileList.length, (index - 1 + fileList.length) % fileList.length].forEach(idx => { const img = new Image(); img.src = fileList[idx]; });
-            }, 300);
-        }
-
+        // --- 以下、既存のロジック ---
         function updateImage() {
             const currentImg = useA ? imgA : imgB, nextImg = useA ? imgB : imgA;
             useA = !useA; currentImg.classList.remove('active'); currentImg.classList.add('visible-back');
@@ -143,13 +162,28 @@
                 counter.innerText = `${currentIndex + 1} / ${fileList.length}`; preloadImages(currentIndex);
             };
         }
+        function preloadImages(index) {
+            if (preloadTimer) clearTimeout(preloadTimer);
+            preloadTimer = setTimeout(() => {
+                [(index + 1) % fileList.length, (index - 1 + fileList.length) % fileList.length].forEach(idx => { const img = new Image(); img.src = fileList[idx]; });
+            }, 300);
+        }
         function nextImage() { currentIndex = (currentIndex + 1) % fileList.length; updateImage(); }
         function prevImage() { currentIndex = (currentIndex - 1 + fileList.length) % fileList.length; updateImage(); }
+        
+        let touchStartX = 0;
+        document.getElementById('viewer').addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX, false);
+        document.getElementById('viewer').addEventListener('touchend', e => {
+            const dist = e.changedTouches[0].screenX - touchStartX;
+            if (Math.abs(dist) > 50) dist > 0 ? prevImage() : nextImage();
+        }, false);
+        
         document.addEventListener('keydown', (e) => {
-            if (errorOverlay.style.display === 'flex') return;
+            if (document.getElementById('error-overlay').style.display === 'flex') return;
             if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') nextImage();
             else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevImage();
         });
+
         checkEnvironment();
     </script>
 </body>
