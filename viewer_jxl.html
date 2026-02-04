@@ -2,78 +2,67 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JPEG XL</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
+    <title>JPEG XL Viewer</title>
     <style>
         body { background-color: black; margin: 0; height: 100dvh; width: 100vw; overflow: hidden; display: flex; justify-content: center; align-items: center; font-family: sans-serif; }
-        #viewer { position: relative; width: 100vw; height: 100dvh; display: flex; justify-content: center; align-items: center; touch-action: none; }
-        .photo { position: absolute; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; transition: opacity 0s; opacity: 0; pointer-events: none; }
-        .active { opacity: 1; z-index: 2; }
+        
+        /* 拡大時に画像が切れないよう、コンテナの設定を調整 */
+        #viewer { 
+            position: relative; width: 100vw; height: 100dvh; 
+            display: flex; justify-content: center; align-items: center; 
+            touch-action: none; overflow: hidden;
+        }
+        
+        .photo { 
+            position: absolute; max-width: 100%; max-height: 100%; 
+            width: auto; height: auto; object-fit: contain; 
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s ease;
+            will-change: transform;
+            transform-origin: center center;
+        }
+
+        .active { opacity: 1; z-index: 2; pointer-events: auto; }
         .visible-back { opacity: 1; z-index: 1; }
         
-        #counter { position: absolute; top: 20px; left: 20px; color: rgba(255, 255, 255, 0.7); padding: 8px 16px; font-size: 14px; z-index: 10; display: none; }
+        #counter { position: absolute; top: 20px; left: 20px; color: rgba(255, 255, 255, 0.7); padding: 8px 16px; font-size: 14px; z-index: 10; display: none; pointer-events: none; }
         
         .nav-btn {
             position: absolute; top: 50%; transform: translateY(-50%);
-            width: 80px; height: 80px; color: rgba(255, 255, 255, 0.4); font-size: 50px;
+            width: 60px; height: 80px; color: rgba(255, 255, 255, 0.3); font-size: 40px;
             display: none; justify-content: center; align-items: center;
             cursor: pointer; transition: all 0.3s; user-select: none; z-index: 100;
         }
-        .nav-btn:hover { color: white; transform: translateY(-50%) scale(1.1); }
-        #btn-left { left: 20px; }
-        #btn-right { right: 20px; }
+        #btn-left { left: 10px; }
+        #btn-right { right: 10px; }
 
         .top-right-container { position: absolute; right: 20px; top: 20px; z-index: 110; }
-        .back-btn {
-            color: rgba(255, 255, 255, 0.7); font-size: 38px; font-weight: 200;
-            text-decoration: none; transition: color 0.3s; line-height: 1; cursor: pointer;
-        }
-        .back-btn:hover { color: white; }
+        .back-btn { color: rgba(255, 255, 255, 0.7); font-size: 38px; text-decoration: none; line-height: 1; cursor: pointer; }
 
         #error-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100dvh;
             background: #000; color: #ff5555; display: none; flex-direction: column; 
             justify-content: center; align-items: center; z-index: 1000; text-align: center; padding: 40px; box-sizing: border-box;
         }
-        h2 { color: white; font-size: 26px; margin-bottom: 5px; font-weight: bold; }
-        .status-badge { display: inline-block; padding: 6px 16px; border-radius: 4px; margin: 10px 5px; font-weight: bold; font-size: 18px; }
+        h2 { color: white; font-size: 22px; margin-bottom: 5px; }
+        .status-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; margin: 5px; font-weight: bold; font-size: 14px; }
         .bad { background: #551111; color: #ff8888; border: 1px solid #ff5555; }
         .good { background: #113311; color: #88ff88; border: 1px solid #55ff55; }
-        #error-advice { color: #ccc; max-width: 600px; margin-top: 25px; width: 100%; }
-        .error-intro { margin-bottom: 20px; display: block; font-size: 16px; font-weight: 200; color: #aaa; text-align: center; }
-        
-        .list-container { display: block; text-align: left; width: 100%; padding-left: 145px; box-sizing: border-box; }
-        .error-list { list-style: none; padding: 0; margin: 0; }
-        .error-list li { 
-            position: relative; padding-left: 1.5em; font-size: 17px; font-weight: bold; 
-            color: #eee; line-height: 1.6; margin-bottom: 12px; white-space: nowrap; 
-        }
-        .error-list li::before { content: "・"; position: absolute; left: 0; color: white; }
-        .error-back-btn { margin-top: 50px; color: #888; text-decoration: none; font-size: 16px; border-bottom: 1px solid #444; padding-bottom: 2px; }
-
-        @media (max-width: 600px) {
-            .list-container { padding-left: 10px; }
-            .error-list li { white-space: normal; }
-        }
+        .error-list { text-align: left; color: #ccc; font-size: 14px; }
+        .error-back-btn { margin-top: 30px; color: #888; text-decoration: none; border-bottom: 1px solid #444; }
     </style>
 </head>
 <body>
     <div id="error-overlay">
         <h2 id="error-title">環境を確認中...</h2>
         <div id="status-list"></div>
-        <div id="error-advice">
-            <span class="error-intro">このギャラリーの閲覧には正しい環境が必要です。以下の原因が考えられます。</span>
-            <div class="list-container">
-                <ul id="dynamic-error-list" class="error-list"></ul>
-            </div>
-        </div>
+        <div id="error-advice"><ul id="dynamic-error-list" class="error-list"></ul></div>
         <a href="index.html" class="error-back-btn">戻る</a>
     </div>
 
     <div id="counter">1 / --</div>
-    <div class="top-right-container">
-        <a href="index.html" class="back-btn" title="EXIT">&times;</a>
-    </div>
+    <div class="top-right-container"><a href="index.html" class="back-btn">&times;</a></div>
 
     <div id="viewer">
         <div id="btn-left" class="nav-btn" onclick="prevImage()">&#10094;</div>
@@ -97,91 +86,112 @@
             "images/2025-09-27_11-16-00.jxl"
         ];
         fileList.sort();
-        let currentIndex = 0, useA = true, preloadTimer = null;
-        const imgA = document.getElementById('imgA'), imgB = document.getElementById('imgB'), counter = document.getElementById('counter'), navBtns = document.querySelectorAll('.nav-btn');
+
+        let currentIndex = 0, useA = true;
+        const imgA = document.getElementById('imgA'), imgB = document.getElementById('imgB'), 
+              counter = document.getElementById('counter'), navBtns = document.querySelectorAll('.nav-btn'),
+              viewer = document.getElementById('viewer');
+
+        // タッチ操作用変数
+        let scale = 1, lastScale = 1;
+        let posX = 0, posY = 0;
+        let lastPosX = 0, lastPosY = 0;
+        let startX = 0, startY = 0;
+        let initialPinchDist = 0;
+        let lastTapTime = 0;
+
+        function applyTransform() {
+            const currentImg = useA ? imgA : imgB;
+            currentImg.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+        }
+
+        function resetTransform() {
+            scale = 1; posX = 0; posY = 0;
+            applyTransform();
+        }
 
         async function checkEnvironment() {
-            const statusList = document.getElementById('status-list');
-            const errorOverlay = document.getElementById('error-overlay');
-            const errorList = document.getElementById('dynamic-error-list');
-            const h2Title = document.getElementById('error-title');
-
             const checkJxl = () => new Promise((r) => { 
-                const i = new Image(); 
-                i.src = fileList[0]; 
-                i.onload = () => r(true); 
-                i.onerror = () => r(false); 
-                setTimeout(() => r(false), 2000); 
+                const i = new Image(); i.src = "data:image/jxl;base64,/wr8BggB"; // 最小限のJxlヘッダ
+                i.onload = () => r(true); i.onerror = () => r(false);
+                setTimeout(() => r(false), 1000);
             });
-
             const jxlSupport = await checkJxl();
-            const hdrSupport = window.matchMedia('(dynamic-range: high)').matches || 
-                               window.matchMedia('(video-dynamic-range: high)').matches || 
-                               (window.screen.highDynamicRangeSupported === true);
+            const hdrSupport = window.matchMedia('(dynamic-range: high)').matches || (window.screen.highDynamicRangeSupported === true);
 
             if (jxlSupport && hdrSupport) {
-                errorOverlay.style.display = 'none';
+                document.getElementById('error-overlay').style.display = 'none';
                 counter.style.display = 'block';
                 navBtns.forEach(btn => btn.style.display = 'flex');
                 updateImage();
             } else {
-                errorOverlay.style.display = 'flex';
-                let s = ""; 
-                let l = "";
-
-                if (!jxlSupport && !hdrSupport) {
-                    h2Title.innerText = "JXL・HDR環境が検出されません";
-                    s = `<div class="status-badge bad">JXL: 未検出</div><div class="status-badge bad">HDR: 未検出</div>`;
-                    l = `<li>ブラウザがJXLに対応していない</li>
-                         <li>ブラウザがHDRに対応していない</li>
-                         <li>ディスプレイがHDRに対応していない</li>
-                         <li>OS,ディスプレイの設定でHDRが<br>有効になっていない</li>`;
-                } else if (!jxlSupport) {
-                    h2Title.innerText = "JXL環境が検出されません";
-                    s = `<div class="status-badge bad">JXL: 未検出</div><div class="status-badge good">HDR: 検出済</div>`;
-                    l = `<li>ブラウザがJXLに対応していない</li>`;
-                } else {
-                    h2Title.innerText = "HDR環境が検出されません";
-                    s = `<div class="status-badge good">JXL: 検出済</div><div class="status-badge bad">HDR: 未検出</div>`;
-                    l = `<li>ブラウザがHDRに対応していない</li>
-                         <li>ディスプレイがHDRに対応していない</li>
-                         <li>OS,ディスプレイの設定でHDRが<br>有効になっていない</li>`;
-                }
-                statusList.innerHTML = s;
-                errorList.innerHTML = l;
+                document.getElementById('error-overlay').style.display = 'flex';
+                document.getElementById('error-title').innerText = "環境エラー";
+                document.getElementById('status-list').innerHTML = `<div class="status-badge ${jxlSupport?'good':'bad'}">JXL: ${jxlSupport?'OK':'NG'}</div><div class="status-badge ${hdrSupport?'good':'bad'}">HDR: ${hdrSupport?'OK':'NG'}</div>`;
             }
         }
 
         function updateImage() {
+            resetTransform();
             const currentImg = useA ? imgA : imgB, nextImg = useA ? imgB : imgA;
-            useA = !useA; currentImg.classList.remove('active'); currentImg.classList.add('visible-back');
-            nextImg.fetchPriority = 'high'; nextImg.src = fileList[currentIndex];
+            useA = !useA;
+            currentImg.classList.remove('active');
+            currentImg.classList.add('visible-back');
+            nextImg.src = fileList[currentIndex];
             nextImg.onload = () => {
                 nextImg.classList.add('active');
-                setTimeout(() => { currentImg.classList.remove('visible-back'); }, 100);
-                counter.innerText = `${currentIndex + 1} / ${fileList.length}`; preloadImages(currentIndex);
+                setTimeout(() => currentImg.classList.remove('visible-back'), 150);
+                counter.innerText = `${currentIndex + 1} / ${fileList.length}`;
             };
         }
-        function preloadImages(index) {
-            if (preloadTimer) clearTimeout(preloadTimer);
-            preloadTimer = setTimeout(() => {
-                [(index + 1) % fileList.length, (index - 1 + fileList.length) % fileList.length].forEach(idx => { const img = new Image(); img.src = fileList[idx]; });
-            }, 300);
-        }
+
         function nextImage() { currentIndex = (currentIndex + 1) % fileList.length; updateImage(); }
         function prevImage() { currentIndex = (currentIndex - 1 + fileList.length) % fileList.length; updateImage(); }
-        
-        let touchStartX = 0;
-        document.getElementById('viewer').addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX, false);
-        document.getElementById('viewer').addEventListener('touchend', e => {
-            const dist = e.changedTouches[0].screenX - touchStartX;
-            if (Math.abs(dist) > 50) dist > 0 ? prevImage() : nextImage();
-        }, false);
-        
-        document.addEventListener('keydown', (e) => {
-            if (document.getElementById('error-overlay').style.display === 'flex') return;
-            if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') nextImage();
-            else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevImage();
+
+        // --- スマートフォン向けタッチ制御 ---
+        viewer.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                // ピンチ開始
+                initialPinchDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                lastScale = scale;
+            } else if (e.touches.length === 1) {
+                // シングルタップ/ダブルタップ判定
+                const now = Date.now();
+                if (now - lastTapTime < 300) {
+                    // ダブルタップでリセット or 拡大
+                    scale === 1 ? scale = 2.5 : scale = 1;
+                    posX = 0; posY = 0;
+                    applyTransform();
+                    lastTapTime = 0;
+                } else {
+                    lastTapTime = now;
+                    startX = e.touches[0].pageX - posX;
+                    startY = e.touches[0].pageY - posY;
+                }
+            }
+        }, { passive: false });
+
+        viewer.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (e.touches.length === 2) {
+                // ピンチズーム
+                const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+                scale = Math.min(Math.max(lastScale * (dist / initialPinchDist), 1), 5);
+                applyTransform();
+            } else if (e.touches.length === 1 && scale > 1) {
+                // 拡大中のドラッグ移動
+                posX = e.touches[0].pageX - startX;
+                posY = e.touches[0].pageY - startY;
+                applyTransform();
+            }
+        }, { passive: false });
+
+        viewer.addEventListener('touchend', e => {
+            if (e.touches.length === 0 && scale === 1) {
+                // 等倍時の左右スワイプ送り
+                const dist = e.changedTouches[0].pageX - (startX + posX);
+                if (Math.abs(dist) > 80) dist > 0 ? prevImage() : nextImage();
+            }
         });
 
         checkEnvironment();
